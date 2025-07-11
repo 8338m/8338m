@@ -76,3 +76,88 @@
 
     .cell.winner {
       background-color: gold !important;
+    }
+
+    .cell.loser {
+      background-color: #ccc !important;
+      color: #888;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="warning">⚠️ 勿偷刮，後台有記錄 ⚠️</div>
+
+  <h1>選出你的幸運號碼！</h1>
+  <div id="message"></div>
+
+  <div class="grid" id="grid"></div>
+
+  <script>
+    const winningNumber = 52;
+    const cooldownTime = 30 * 1000;
+    let canClick = true;
+    let history = JSON.parse(localStorage.getItem("scratchHistory") || "[]");
+    const grid = document.getElementById('grid');
+    const message = document.getElementById('message');
+
+    function saveHistory(num) {
+      history.push(num);
+      localStorage.setItem("scratchHistory", JSON.stringify(history));
+    }
+
+    function createCell(i) {
+      const cell = document.createElement('div');
+      cell.classList.add('cell');
+      cell.dataset.number = i;
+
+      const number = document.createElement('div');
+      number.classList.add('number');
+      number.innerText = i;
+      cell.appendChild(number);
+
+      cell.addEventListener('click', () => {
+        if (!canClick) {
+          message.innerText = "請等待 30 秒後再選下一格！";
+          return;
+        }
+
+        if (cell.classList.contains('revealed')) return;
+
+        const confirmResult = confirm(`你確定要選擇這格？`);
+        if (!confirmResult) return;
+
+        // 顯示號碼
+        cell.classList.add('revealed');
+
+        const selected = parseInt(cell.dataset.number);
+        if (selected === winningNumber) {
+          cell.classList.add('winner');
+          number.innerText = "🎉 中獎！";
+          message.innerText = "恭喜你中獎了！";
+        } else {
+          cell.classList.add('loser');
+          message.innerText = "未中，再接再厲。30 秒後可再選一格。";
+        }
+
+        saveHistory(selected);
+
+        // 冷卻
+        canClick = false;
+        setTimeout(() => {
+          canClick = true;
+          message.innerText = "";
+        }, cooldownTime);
+      });
+
+      return cell;
+    }
+
+    for (let i = 1; i <= 100; i++) {
+      const cell = createCell(i);
+      grid.appendChild(cell);
+    }
+  </script>
+
+</body>
+</html>
