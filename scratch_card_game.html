@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <title>線上刮刮卡</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: sans-serif;
+      background: #fff8dc;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    h1 {
+      color: #d4af37;
+      margin-top: 20px;
+    }
+    #scratchCanvas {
+      border: 3px solid #d4af37;
+      background-color: #eee;
+      touch-action: none;
+    }
+    #message {
+      display: none;
+      font-size: 22px;
+      color: #b8860b;
+      margin-top: 20px;
+    }
+    a.button {
+      display: inline-block;
+      margin-top: 10px;
+      padding: 10px 20px;
+      background: #ffd700;
+      color: #000;
+      text-decoration: none;
+      border-radius: 8px;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <h1>🎉 線上刮刮卡</h1>
+  <canvas id="scratchCanvas" width="300" height="300"></canvas>
+  <div id="message">
+    🎊 恭喜中獎！<br>
+    <a class="button" href="https://forms.gle/Kv8KHjLLqxof6AiA6" target="_blank">點我領獎</a>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('scratchCanvas');
+    const ctx = canvas.getContext('2d');
+
+    const rows = 10, cols = 10;
+    const cellSize = canvas.width / cols;
+
+    // 隨機選擇一格中獎格
+    const winRow = Math.floor(Math.random() * rows);
+    const winCol = Math.floor(Math.random() * cols);
+
+    // 畫中獎底圖（文字）
+    function drawBaseLayer() {
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      ctx.fillStyle = '#000';
+      ctx.font = '16px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          const text = (r === winRow && c === winCol) ? '中獎🎉' : '';
+          ctx.fillText(text, c * cellSize + cellSize / 2, r * cellSize + cellSize / 2);
+        }
+      }
+    }
+
+    function drawOverlay() {
+      ctx.globalCompositeOperation = 'source-over';
+      ctx.fillStyle = '#999';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.globalCompositeOperation = 'destination-out';
+    }
+
+    drawBaseLayer();
+    const baseImage = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    drawOverlay();
+
+    let isDrawing = false;
+
+    function scratch(e) {
+      if (!isDrawing) return;
+      const rect = canvas.getBoundingClientRect();
+      const x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
+      const y = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
+      ctx.beginPath();
+      ctx.arc(x, y, 15, 0, Math.PI * 2);
+      ctx.fill();
+
+      checkWin(x, y);
+    }
+
+    function checkWin(x, y) {
+      const col = Math.floor(x / cellSize);
+      const row = Math.floor(y / cellSize);
+      if (row === winRow && col === winCol) {
+        document.getElementById('message').style.display = 'block';
+      }
+    }
+
+    canvas.addEventListener('mousedown', () => isDrawing = true);
+    canvas.addEventListener('mouseup', () => isDrawing = false);
+    canvas.addEventListener('mousemove', scratch);
+
+    canvas.addEventListener('touchstart', () => isDrawing = true);
+    canvas.addEventListener('touchend', () => isDrawing = false);
+    canvas.addEventListener('touchmove', scratch);
+  </script>
+</body>
+</html>
