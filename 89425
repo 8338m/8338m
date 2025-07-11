@@ -1,13 +1,12 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>線上刮刮卡</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <style>
     body {
       margin: 0;
-      padding: 0;
       font-family: sans-serif;
       background: #fff8dc;
       display: flex;
@@ -18,16 +17,16 @@
       color: #d4af37;
       margin-top: 20px;
     }
-    #scratchCanvas {
+    canvas {
       border: 3px solid #d4af37;
       background-color: #eee;
       touch-action: none;
     }
     #message {
       display: none;
-      font-size: 22px;
-      color: #b8860b;
+      font-size: 20px;
       margin-top: 20px;
+      color: #b8860b;
     }
     a.button {
       display: inline-block;
@@ -42,6 +41,7 @@
   </style>
 </head>
 <body>
+
   <h1>🎉 線上刮刮卡</h1>
   <canvas id="scratchCanvas" width="300" height="300"></canvas>
   <div id="message">
@@ -52,17 +52,15 @@
   <script>
     const canvas = document.getElementById('scratchCanvas');
     const ctx = canvas.getContext('2d');
-
     const rows = 10, cols = 10;
     const cellSize = canvas.width / cols;
 
-    // 隨機選擇一格中獎格
     const winRow = Math.floor(Math.random() * rows);
     const winCol = Math.floor(Math.random() * cols);
 
-    // 畫中獎底圖（文字）
-    function drawBaseLayer() {
-      ctx.fillStyle = '#ffffff';
+    // 畫底圖
+    function drawBase() {
+      ctx.fillStyle = '#fff';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
       ctx.fillStyle = '#000';
@@ -78,16 +76,16 @@
       }
     }
 
-    function drawOverlay() {
+    function drawCover() {
       ctx.globalCompositeOperation = 'source-over';
-      ctx.fillStyle = '#999';
+      ctx.fillStyle = '#aaa';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
       ctx.globalCompositeOperation = 'destination-out';
     }
 
-    drawBaseLayer();
+    drawBase();
     const baseImage = ctx.getImageData(0, 0, canvas.width, canvas.height);
-    drawOverlay();
+    drawCover();
 
     let isDrawing = false;
 
@@ -100,10 +98,10 @@
       ctx.arc(x, y, 15, 0, Math.PI * 2);
       ctx.fill();
 
-      checkWin(x, y);
+      checkIfWinning(x, y);
     }
 
-    function checkWin(x, y) {
+    function checkIfWinning(x, y) {
       const col = Math.floor(x / cellSize);
       const row = Math.floor(y / cellSize);
       if (row === winRow && col === winCol) {
