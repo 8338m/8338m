@@ -42,90 +42,37 @@
     }
 
     .cell {
-      background-color: #eee;
-      border: 2px solid #bbb;
+      background-color: silver;
+      border: 2px solid #999;
       border-radius: 10px;
       height: 60px;
-      line-height: 60px;
       font-size: 18px;
       font-weight: bold;
       cursor: pointer;
       user-select: none;
-      transition: background 0.3s, transform 0.2s;
+      position: relative;
+      overflow: hidden;
     }
 
-    .cell.clicked {
-      background-color: #ddd;
+    .cell.revealed {
+      background-color: #fff;
+      color: #000;
       pointer-events: none;
     }
 
+    .cell .number {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-weight: bold;
+      font-size: 18px;
+      display: none;
+    }
+
+    .cell.revealed .number {
+      display: block;
+    }
+
     .cell.winner {
-      background-color: gold;
-      color: #000;
-    }
-
-    .cell.loser {
-      background-color: #ccc;
-      color: #999;
-    }
-  </style>
-</head>
-<body>
-
-  <div class="warning">⚠️ 勿偷刮，後台有記錄 ⚠️</div>
-
-  <h1>選出你的幸運號碼！</h1>
-  <div id="message"></div>
-
-  <div class="grid" id="grid"></div>
-
-  <script>
-    const winningNumber = 52;
-    const cooldownTime = 30 * 1000; // 30 秒
-    let canClick = true;
-
-    const grid = document.getElementById('grid');
-    const message = document.getElementById('message');
-
-    // 建立 100 格
-    for (let i = 1; i <= 100; i++) {
-      const cell = document.createElement('div');
-      cell.classList.add('cell');
-      cell.innerText = i;
-      cell.dataset.number = i;
-
-      cell.addEventListener('click', () => {
-        if (!canClick) {
-          message.innerText = "請等待 30 秒後再選下一格！";
-          return;
-        }
-
-        const confirmResult = confirm(`你確定要選擇第 ${i} 號？`);
-        if (!confirmResult) return;
-
-        // 顯示結果
-        cell.classList.add('clicked');
-        if (parseInt(cell.dataset.number) === winningNumber) {
-          cell.classList.add('winner');
-          cell.innerText = "🎉 中獎！";
-          message.innerText = "恭喜你中獎了！";
-        } else {
-          cell.classList.add('loser');
-          cell.innerText = "未中";
-          message.innerText = "再接再厲，30 秒後可再選一格。";
-        }
-
-        // 啟動冷卻倒數
-        canClick = false;
-        setTimeout(() => {
-          canClick = true;
-          message.innerText = "";
-        }, cooldownTime);
-      });
-
-      grid.appendChild(cell);
-    }
-  </script>
-
-</body>
-</html>
+      background-color: gold !important;
