@@ -2,120 +2,168 @@
 <html lang="zh-TW">
 <head>
   <meta charset="UTF-8" />
-  <title>線上刮刮卡</title>
+  <title>100格刮刮卡</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <style>
     body {
       margin: 0;
       font-family: sans-serif;
-      background: #fff8dc;
       display: flex;
       flex-direction: column;
       align-items: center;
+      background: #f2f2f2;
     }
+
     h1 {
-      color: #d4af37;
       margin-top: 20px;
+      color: #333;
     }
-    canvas {
-      border: 3px solid #d4af37;
-      background-color: #eee;
-      touch-action: none;
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(10, 1fr);
+      gap: 5px;
+      max-width: 600px;
+      margin: 20px;
     }
-    #message {
-      display: none;
-      font-size: 20px;
-      margin-top: 20px;
-      color: #b8860b;
+
+    .cell {
+      position: relative;
+      width: 60px;
+      height: 60px;
+      background: #ccc;
+      border: 1px solid #999;
+      overflow: hidden;
+      cursor: pointer;
     }
-    a.button {
-      display: inline-block;
-      margin-top: 10px;
-      padding: 10px 20px;
-      background: #ffd700;
+
+    .label {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-weight: bold;
+      font-size: 16px;
       color: #000;
-      text-decoration: none;
-      border-radius: 8px;
+      z-index: 1;
+      display: none;
+    }
+
+    canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      z-index: 2;
+    }
+
+    .disabled {
+      pointer-events: none;
+      opacity: 0.5;
+    }
+
+    #message {
+      color: red;
       font-weight: bold;
     }
   </style>
 </head>
 <body>
-
-  <h1>🎉 線上刮刮卡</h1>
-  <canvas id="scratchCanvas" width="300" height="300"></canvas>
-  <div id="message">
-    🎊 恭喜中獎！<br>
-    <a class="button" href="https://forms.gle/Kv8KHjLLqxof6AiA6" target="_blank">點我領獎</a>
-  </div>
+  <h1>線上刮刮卡 - 選中獎號吧！</h1>
+  <div id="message"></div>
+  <div class="grid" id="grid"></div>
 
   <script>
-    const canvas = document.getElementById('scratchCanvas');
-    const ctx = canvas.getContext('2d');
-    const rows = 10, cols = 10;
-    const cellSize = canvas.width / cols;
+    const grid = document.getElementById('grid');
+    const message = document.getElementById('message');
+    const winningNumber = 52;
+    let canScratch = true;
 
-    const winRow = Math.floor(Math.random() * rows);
-    const winCol = Math.floor(Math.random() * cols);
+    function createCell(number) {
+      const cell = document.createElement('div');
+      cell.className = 'cell';
 
-    // 畫底圖
-    function drawBase() {
-      ctx.fillStyle = '#fff';
+      const label = document.createElement('div');
+      label.className = 'label';
+      label.innerText = number === winningNumber ? '🎉 中獎！' : number;
+      cell.appendChild(label);
+
+      const canvas = document.createElement('canvas');
+      canvas.width = 60;
+      canvas.height = 60;
+      cell.appendChild(canvas);
+
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#999';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      ctx.fillStyle = '#000';
-      ctx.font = '16px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
+      let isDrawing = false;
 
-      for (let r = 0; r < rows; r++) {
-        for (let c = 0; c < cols; c++) {
-          const text = (r === winRow && c === winCol) ? '中獎🎉' : '';
-          ctx.fillText(text, c * cellSize + cellSize / 2, r * cellSize + cellSize / 2);
-        }
-      }
+      const scratch = (e) => {
+        if (!canScratch) return;
+        const rect = canvas.getBoundingClientRect();
+        const x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
+        const y = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
+        ctx.globalCompositeOperation = 'destination-out';
+        ctx.beginPath();
+        ctx.arc(x, y, 12, 0, Math.PI * 2);
+        ctx.fill();
+      };
+
+      canvas.addEventListener('mousedown', (e) => {
+        if (!canScratch) return;
+        isDrawing = true;
+        scratch(e);
+      });
+
+      canvas.addEventListener('mousemove', (e) => {
+        if (isDrawing) scratch(e);
+      });
+
+      canvas.addEventListener('mouseup', () => {
+        if (!canScratch) return;
+        isDrawing = false;
+        label.style.display = 'block';
+        startCooldown();
+      });
+
+      canvas.addEventListener('mouseleave', () => {
+        isDrawing = false;
+      });
+
+      // 手機支援
+      canvas.addEventListener('touchstart', (e) => {
+        if (!canScratch) return;
+        isDrawing = true;
+        scratch(e);
+      });
+
+      canvas.addEventListener('touchmove', (e) => {
+        if (isDrawing) scratch(e);
+      });
+
+      canvas.addEventListener('touchend', () => {
+        if (!canScratch) return;
+        isDrawing = false;
+        label.style.display = 'block';
+        startCooldown();
+      });
+
+      return cell;
     }
 
-    function drawCover() {
-      ctx.globalCompositeOperation = 'source-over';
-      ctx.fillStyle = '#aaa';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      ctx.globalCompositeOperation = 'destination-out';
+    function startCooldown() {
+      canScratch = false;
+      message.innerText = '你已刮過一次，請等待 60 秒再試！';
+      setTimeout(() => {
+        canScratch = true;
+        message.innerText = '';
+      }, 60000);
     }
 
-    drawBase();
-    const baseImage = ctx.getImageData(0, 0, canvas.width, canvas.height);
-    drawCover();
-
-    let isDrawing = false;
-
-    function scratch(e) {
-      if (!isDrawing) return;
-      const rect = canvas.getBoundingClientRect();
-      const x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
-      const y = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
-      ctx.beginPath();
-      ctx.arc(x, y, 15, 0, Math.PI * 2);
-      ctx.fill();
-
-      checkIfWinning(x, y);
+    for (let i = 1; i <= 100; i++) {
+      const cell = createCell(i);
+      grid.appendChild(cell);
     }
-
-    function checkIfWinning(x, y) {
-      const col = Math.floor(x / cellSize);
-      const row = Math.floor(y / cellSize);
-      if (row === winRow && col === winCol) {
-        document.getElementById('message').style.display = 'block';
-      }
-    }
-
-    canvas.addEventListener('mousedown', () => isDrawing = true);
-    canvas.addEventListener('mouseup', () => isDrawing = false);
-    canvas.addEventListener('mousemove', scratch);
-
-    canvas.addEventListener('touchstart', () => isDrawing = true);
-    canvas.addEventListener('touchend', () => isDrawing = false);
-    canvas.addEventListener('touchmove', scratch);
   </script>
 </body>
 </html>
