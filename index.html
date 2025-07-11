@@ -2,168 +2,130 @@
 <html lang="zh-TW">
 <head>
   <meta charset="UTF-8" />
-  <title>100格刮刮卡</title>
+  <title>線上刮刮卡</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <style>
     body {
       margin: 0;
-      font-family: sans-serif;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      background: #f2f2f2;
+      font-family: "Noto Sans TC", sans-serif;
+      background-color: #fffbea;
+      text-align: center;
+      padding: 10px;
+    }
+
+    .warning {
+      background: red;
+      color: white;
+      padding: 10px;
+      font-weight: bold;
+      font-size: 18px;
     }
 
     h1 {
-      margin-top: 20px;
+      margin: 15px 0;
       color: #333;
+      font-size: 24px;
+    }
+
+    #message {
+      margin: 10px 0;
+      color: #cc0000;
+      font-weight: bold;
     }
 
     .grid {
       display: grid;
-      grid-template-columns: repeat(10, 1fr);
-      gap: 5px;
+      grid-template-columns: repeat(auto-fit, minmax(60px, 1fr));
+      gap: 10px;
       max-width: 600px;
-      margin: 20px;
+      margin: auto;
     }
 
     .cell {
-      position: relative;
-      width: 60px;
+      background-color: #eee;
+      border: 2px solid #bbb;
+      border-radius: 10px;
       height: 60px;
-      background: #ccc;
-      border: 1px solid #999;
-      overflow: hidden;
+      line-height: 60px;
+      font-size: 18px;
+      font-weight: bold;
       cursor: pointer;
+      user-select: none;
+      transition: background 0.3s, transform 0.2s;
     }
 
-    .label {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      font-weight: bold;
-      font-size: 16px;
-      color: #000;
-      z-index: 1;
-      display: none;
-    }
-
-    canvas {
-      position: absolute;
-      top: 0;
-      left: 0;
-      z-index: 2;
-    }
-
-    .disabled {
+    .cell.clicked {
+      background-color: #ddd;
       pointer-events: none;
-      opacity: 0.5;
     }
 
-    #message {
-      color: red;
-      font-weight: bold;
+    .cell.winner {
+      background-color: gold;
+      color: #000;
+    }
+
+    .cell.loser {
+      background-color: #ccc;
+      color: #999;
     }
   </style>
 </head>
 <body>
-  <h1>線上刮刮卡 - 選中獎號吧！</h1>
+
+  <div class="warning">⚠️ 勿偷刮，後台有記錄 ⚠️</div>
+
+  <h1>選出你的幸運號碼！</h1>
   <div id="message"></div>
+
   <div class="grid" id="grid"></div>
 
   <script>
+    const winningNumber = 52;
+    const cooldownTime = 30 * 1000; // 30 秒
+    let canClick = true;
+
     const grid = document.getElementById('grid');
     const message = document.getElementById('message');
-    const winningNumber = 52;
-    let canScratch = true;
 
-    function createCell(number) {
-      const cell = document.createElement('div');
-      cell.className = 'cell';
-
-      const label = document.createElement('div');
-      label.className = 'label';
-      label.innerText = number === winningNumber ? '🎉 中獎！' : number;
-      cell.appendChild(label);
-
-      const canvas = document.createElement('canvas');
-      canvas.width = 60;
-      canvas.height = 60;
-      cell.appendChild(canvas);
-
-      const ctx = canvas.getContext('2d');
-      ctx.fillStyle = '#999';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-      let isDrawing = false;
-
-      const scratch = (e) => {
-        if (!canScratch) return;
-        const rect = canvas.getBoundingClientRect();
-        const x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
-        const y = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
-        ctx.globalCompositeOperation = 'destination-out';
-        ctx.beginPath();
-        ctx.arc(x, y, 12, 0, Math.PI * 2);
-        ctx.fill();
-      };
-
-      canvas.addEventListener('mousedown', (e) => {
-        if (!canScratch) return;
-        isDrawing = true;
-        scratch(e);
-      });
-
-      canvas.addEventListener('mousemove', (e) => {
-        if (isDrawing) scratch(e);
-      });
-
-      canvas.addEventListener('mouseup', () => {
-        if (!canScratch) return;
-        isDrawing = false;
-        label.style.display = 'block';
-        startCooldown();
-      });
-
-      canvas.addEventListener('mouseleave', () => {
-        isDrawing = false;
-      });
-
-      // 手機支援
-      canvas.addEventListener('touchstart', (e) => {
-        if (!canScratch) return;
-        isDrawing = true;
-        scratch(e);
-      });
-
-      canvas.addEventListener('touchmove', (e) => {
-        if (isDrawing) scratch(e);
-      });
-
-      canvas.addEventListener('touchend', () => {
-        if (!canScratch) return;
-        isDrawing = false;
-        label.style.display = 'block';
-        startCooldown();
-      });
-
-      return cell;
-    }
-
-    function startCooldown() {
-      canScratch = false;
-      message.innerText = '你已刮過一次，請等待 60 秒再試！';
-      setTimeout(() => {
-        canScratch = true;
-        message.innerText = '';
-      }, 60000);
-    }
-
+    // 建立 100 格
     for (let i = 1; i <= 100; i++) {
-      const cell = createCell(i);
+      const cell = document.createElement('div');
+      cell.classList.add('cell');
+      cell.innerText = i;
+      cell.dataset.number = i;
+
+      cell.addEventListener('click', () => {
+        if (!canClick) {
+          message.innerText = "請等待 30 秒後再選下一格！";
+          return;
+        }
+
+        const confirmResult = confirm(`你確定要選擇第 ${i} 號？`);
+        if (!confirmResult) return;
+
+        // 顯示結果
+        cell.classList.add('clicked');
+        if (parseInt(cell.dataset.number) === winningNumber) {
+          cell.classList.add('winner');
+          cell.innerText = "🎉 中獎！";
+          message.innerText = "恭喜你中獎了！";
+        } else {
+          cell.classList.add('loser');
+          cell.innerText = "未中";
+          message.innerText = "再接再厲，30 秒後可再選一格。";
+        }
+
+        // 啟動冷卻倒數
+        canClick = false;
+        setTimeout(() => {
+          canClick = true;
+          message.innerText = "";
+        }, cooldownTime);
+      });
+
       grid.appendChild(cell);
     }
   </script>
+
 </body>
 </html>
